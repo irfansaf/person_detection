@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 19
+names: ['Aditya Hadi', 'Akwila Purba', 'Alexandra Verencia', 'Beatrice Aprilia', 'Cecilia Pasaribu', 'Cindy Claudia', 'Dustin Istanto', 'Enjel Rupiani', 'Eyodia Renita', 'Fakhri Athallah', 'Irfan Saifullah', 'Joanatan Setiaji', 'Kevin Marthakusuma', 'Marcellino Timothy', 'Muhammad Ilham Pratama', 'Queen Unsulangi', 'Shine Brave', 'Yudhistira Fauzy', 'Zulfikar Ahmad']
+
+roboflow:
+  workspace: president-university-mfe6z
+  project: image-processing-dataset
+  version: 5
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/president-university-mfe6z/image-processing-dataset/dataset/5

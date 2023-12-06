@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JemB4w Detection</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <style>
+        canvas {
+            display: block;
+            border: 1px solid black;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 p-8">
+    <div class="max-w-md mx-auto bg-white p-6 rounded-md shadow-md">
+         <label for="uploadInput" class="block text-lg font-bold mb-4">Upload an Image:</label>
+            <input id="uploadInput" type="file" class="mb-4"/>
+
+            <div class="relative border border-gray-400">
+                <canvas id="outputCanvas" class="absolute top-0 left-0 w-full h-full"></canvas>
+            </div>
+            <script>
+                /**
+                 * "Upload" button onClick handler: uploads selected
+                 * image file to backend, receives an array of
+                 * detected objects and draws them on top of the resized image
+                 */
+                const input = document.getElementById("uploadInput");
+                input.addEventListener("change", async (event) => {
+                    const file = event.target.files[0];
+                    const data = new FormData();
+                    data.append("image_file", file, "image_file");
+                    const response = await fetch("/detect", {
+                        method: "post",
+                        body: data,
+                    });
+                    const boxes = await response.json();
+                    drawResizedImageAndBoxes(file, boxes);
+                });
+
+                /**
+                 * Function draws the resized image from the provided file
+                 * and bounding boxes of detected objects on top of the resized image
+                 * @param file Uploaded file object
+                 * @param boxes Array of bounding boxes in format
+                 * [[x1, y1, x2, y2, object_type, probability], ...]
+                 */
+                function drawResizedImageAndBoxes(file, boxes) {
+                    const img = new Image();
+                    img.src = URL.createObjectURL(file);
+                    img.onload = () => {
+                        const maxWidth = 640; // Set your desired maximum width
+                        const maxHeight = 640; // Set your desired maximum height
+
+                        // Calculate the aspect ratio of the original image
+                        const aspectRatio = img.width / img.height;
+
+                        // Calculate the new width and height while maintaining the aspect ratio
+                        let newWidth = img.width;
+                        let newHeight = img.height;
+
+                        if (newWidth > maxWidth) {
+                            newWidth = maxWidth;
+                            newHeight = newWidth / aspectRatio;
+                        }
+
+                        if (newHeight > maxHeight) {
+                            newHeight = maxHeight;
+                            newWidth = newHeight * aspectRatio;
+                        }
+
+                        // Create a canvas with the new dimensions
+                        const canvas = document.createElement("canvas");
+                        canvas.width = newWidth;
+                        canvas.height = newHeight;
+                        const ctx = canvas.getContext("2d");
+
+                        // Draw the resized image on the canvas
+                        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+                        // Draw bounding boxes on top of the resized image
+                        ctx.strokeStyle = "#00FF00";
+                        ctx.lineWidth = 3;
+                        ctx.font = "18px serif";
+
+                        boxes.forEach(box => {
+                            if (box.hasOwnProperty('name')) {
+                                // Recognized face
+                                const { box: [x1, y1, x2, y2], name, confidence } = box;
+                                ctx.strokeRect((x1 / img.width) * newWidth, (y1 / img.height) * newHeight, ((x2 - x1) / img.width) * newWidth, ((y2 - y1) / img.height) * newHeight);
+                                ctx.fillStyle = "#00ff00";
+                                const width = ctx.measureText(name).width;
+                                ctx.fillRect((x1 / img.width) * newWidth, (y1 / img.height) * newHeight, width + 10, 25);
+                                ctx.fillStyle = "#000000";
+                                ctx.fillText(`${name} (${(confidence * 100).toFixed(2)}%)`, (x1 / img.width) * newWidth, (y1 / img.height) * newHeight + 18);
+                            } else {
+                                // Regular object detection
+                                const [x1, y1, x2, y2, label] = box;
+                                ctx.strokeRect((x1 / img.width) * newWidth, (y1 / img.height) * newHeight, ((x2 - x1) / img.width) * newWidth, ((y2 - y1) / img.height) * newHeight);
+                                ctx.fillStyle = "#00ff00";
+                                const width = ctx.measureText(label).width;
+                                ctx.fillRect((x1 / img.width) * newWidth, (y1 / img.height) * newHeight, width + 10, 25);
+                                ctx.fillStyle = "#000000";
+                                ctx.fillText(label, (x1 / img.width) * newWidth, (y1 / img.height) * newHeight + 18);
+                            }
+                        });
+
+                        // Replace the original canvas with the resized canvas
+                        const originalCanvas = document.querySelector("canvas");
+                        originalCanvas.parentNode.replaceChild(canvas, originalCanvas);
+                    };
+                }
+            </script>
+    </div>
+</body>
+</html>
